@@ -534,7 +534,7 @@ def main():
     pars = get_params(toolname, "rw", sys.argv, 
         verbose={"set":lw.set_verbosity, "cmd":verb1} )
 
-    infile = pars["infile"]   
+    infiles= pars["infile"]   
     outdir = pars["outdir"]   
     ftphost = pars["server"]  
     rootdir = pars["root"]    
@@ -550,8 +550,19 @@ def main():
     else:
         oldcaldb = None
 
-    infile = locate_infile( infile )
-    get_caldb_files(ftp, rootdir, infile, outdir, clobber, background_files)
+
+    import stk as stk    
+    for infile in stk.build( infiles ):
+        try:
+            infile = locate_infile( infile )
+            verb1("Processing infile={}".format(infile))
+        except:
+            verb0("WARNING: Unable to locate evt2 file in '{}'.  Skipping it.".format(infile))
+            continue
+            
+        get_caldb_files(ftp, rootdir, infile, outdir, clobber, background_files)
+
+
     close_ftp(ftp)
     print_new_setup( oldcaldb )
 

@@ -20,7 +20,7 @@
 
 
 toolname = "download_obsid_caldb"
-__revision__ = "19 May 2015"
+__revision__ = "9 June 2015"
 
 import os
 import sys
@@ -442,9 +442,15 @@ def setup_caldb_environment( outdir, newconfig ):
     """
     Setup the new CALDB environment variables.
     """
-    oldcaldb = os.environ["CALDB"]
+
+    if "CALDB" in os.environ:
+        oldcaldb = os.environ["CALDB"]
+    else:
+        oldcaldb = None
+        
     os.environ["CALDB"]=outdir
     os.environ["CALDBCONFIG"] = newconfig    
+
     return oldcaldb
 
 
@@ -479,13 +485,15 @@ def print_new_setup(oldcaldb):
     setup.
     """
 
-    if oldcaldb and os.path.abspath(oldcaldb) != os.path.abspath(os.environ["CALDB"]):
+    if (oldcaldb and os.path.abspath(oldcaldb) != os.path.abspath(os.environ["CALDB"])) or ( not oldcaldb):
         verb0( "\nBe sure to setup the following environment variables to")
         verb0( "use these CALDB files.")
         verb0( "")
+        verb0( "(t)csh:")
         verb0( "setenv CALDB "+os.path.abspath(os.environ["CALDB"]))
         verb0( "setenv CALDBCONFIG "+os.path.abspath(os.environ["CALDBCONFIG"]))
         verb0( "")
+        verb0( "bash:")
         verb0( "export CALDB="+os.path.abspath(os.environ["CALDB"]))
         verb0( "export CALDBCONFIG="+os.path.abspath(os.environ["CALDBCONFIG"]))
         verb0( "")

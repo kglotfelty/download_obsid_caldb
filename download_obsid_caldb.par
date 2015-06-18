@@ -1,11 +1,7 @@
 infile,f,a,"",,,"Input event file"
 outdir,f,a,"${ASCDS_INSTALL}/CALDB",,,"Output CALDB directory"
-server,s,h,"cdaftp.cfa.harvard.edu",,,"FTP server with a copy of the Chandra CALDB"
-root,s,h,"pub/arcftp/ChandraCalDB",,,"Root directory name on the FTP server"
 background,b,h,"no",,,"Should the ACIS|HRC background files be downloaded?"
-dryrun,b,h,"no",,,"Only check for missing CALDB files"
+missing,b,h,"no",,,"Only check for missing CALDB files in outdir/ directory?"
 clobber,b,h,"no",,,"Should existing CALDB data files be downloaded again?"
 verbose,i,h,1,0,5,"Amount of tool chatter"
-#server,s,h,"heasarc.gsfc.nasa.gov",,,"FTP server with a copy of the Chandra CALDB"
-#root,s,h,"caldb",,,"Root directory name on the FTP server"
 mode,s,h,ql,,,

@@ -189,11 +189,11 @@ use these CALDB files.
 
 (t)csh:
 setenv CALDB /tmp/635/CALDB
-setenv CALDBCONFIG /tmp/635/CALDB/config/CHANDRA-4.6.8.config
+setenv CALDBCONFIG /tmp/635/CALDB/software/tools/caldb.config
 
 bash:
 export CALDB=/tmp/635/CALDB
-export CALDBCONFIG=/tmp/635/CALDB/config/CHANDRA-4.6.8.config
+export CALDBCONFIG=/tmp/635/CALDB/software/tools/caldb.config
 </VERBATIM>
 
 <PARA>

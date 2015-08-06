@@ -484,9 +484,10 @@ def get_tools(infile):
     would be retrieve twice.
     
     So while OSIP is needed by mkgarf and tg_resolve_events, it
-    only should up in tg_resolve_events.
+    only should up in tg_resolve_events.  Same thing with badpixel
+    and gain files.
 
-    TODO:  HRC RMF, HRC background, ...others...
+    TODO:  HRC RMF, others?
     
     """
 
@@ -536,13 +537,13 @@ def get_tools(infile):
             'SATTEST' : None,
             'AMP_SF_COR' : None,        
         }
-    
-    #
-    # TODO: hrc rmf, hrc background, {others}
-    #
+    misc = {
+        'GTI_LIM' : None,  # dmgti (mtl_build_gti)
+        'MATRIX' : None    # HRC RMF files    
+        }
 
     
-    return [ pixlib , ardlib, acis_process_events, mkwarf, mkarf, mkpsfmap, mkacisrmf , tg_create_mask, tg_resolve_events, tgextract, tgextract2, hrc_process_events]
+    return [ pixlib , ardlib, acis_process_events, mkwarf, mkarf, mkpsfmap, mkacisrmf , tg_create_mask, tg_resolve_events, tgextract, tgextract2, hrc_process_events, misc]
 
 
 
@@ -571,9 +572,52 @@ def setup_caldb_environment( outdir, newconfig ):
         oldcaldb = None
         
     os.environ["CALDB"]=outdir
-    os.environ["CALDBCONFIG"] = newconfig    
+    os.environ["CALDBCONFIG"] = "{}/software/tools/caldb.config".format(outdir) #newconfig    
 
     return oldcaldb
+
+
+def get_background_files( ftp, rootdir, infile, outdir, clobber, background_files, missing):
+    """
+    """
+    
+    import stk as stk
+    from pycrates import read_file
+    tab = read_file(infile)
+
+    inst = tab.get_key_value("INSTRUME")
+    if 'ACIS' == inst:
+        from ciao_contrib.runtool import acis_bkgrnd_lookup
+        acis_bkgrnd_lookup.punlearn()
+        try:
+            acis_bkgrnd_lookup( infile )
+            bkgfiles = stk.build( acis_bkgrnd_lookup.outfile )
+            retrieve_caldb_file( ftp, rootdir, bkgfiles, outdir, clobber, missing )
+        except Exception, e:
+            #print e
+            pass
+
+    elif 'HRC' == inst:
+        from ciao_contrib.runtool import hrc_bkgrnd_lookup
+        hrc_bkgrnd_lookup.punlearn()
+        try:
+            hrc_bkgrnd_lookup(infile, "event")
+            bkgfiles = stk.build( hrc_bkgrnd_lookup.outfile)
+            retrieve_caldb_file( ftp, rootdir, bkgfiles, outdir, clobber, missing )                
+        except:
+            pass
+        
+        try:
+            hrc_bkgrnd_lookup(infile, "spectrum")
+            bkgfiles = stk.build( hrc_bkgrnd_lookup.outfile)
+            retrieve_caldb_file( ftp, rootdir, bkgfiles, outdir, clobber, missing )                
+        except Exception, e:
+            # print e
+            pass            
+    else:
+        # Should have failed much sooner than now!
+        raise RuntimeError("Unknown instrument")
+
 
 
 def get_caldb_files( ftp, rootdir, infile, outdir, clobber, background_files, missing):
@@ -589,17 +633,8 @@ def get_caldb_files( ftp, rootdir, infile, outdir, clobber, background_files, mi
         retrieve_files_by_tool( ftp, rootdir, tool, infile, outdir, clobber, missing )
 
     if background_files:
-        from ciao_contrib.runtool import acis_bkgrnd_lookup
-        import stk as stk
-        acis_bkgrnd_lookup.punlearn()
-        try:
-            acis_bkgrnd_lookup( infile )
-            bkgfiles = stk.build( acis_bkgrnd_lookup.outfile )
-            retrieve_caldb_file( ftp, rootdir, bkgfiles, outdir, clobber, missing )
-        except Exception, e:
-            #print e
-            pass
-    
+        get_background_files( ftp, rootdir, infile, outdir, clobber, background_files, missing)
+
 
 def print_new_setup(oldcaldb):
     """

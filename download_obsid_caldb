@@ -20,7 +20,7 @@
 
 
 toolname = "download_obsid_caldb"
-__revision__ = "10 June 2015"
+__revision__ = "10 November 2015"
 
 import os
 import sys
@@ -427,11 +427,18 @@ def retrieve_files_by_tool( ftp, rootdir, tool, infile, outdir, clobber, missing
     from caldb4 import Caldb
 
     for prod in tool:
+        verb3("Looking up CAL_CNAM={}".format(prod) )
+
         # Ideally, this would only be done once (per-infile) but there
         # look to be some memory wackiness when the same Caldb object 
         # has the .product changed -- it doesn't reset/reinit cleanly.
         cc = Caldb( infile=infile )
         cc.product = prod
+        if tool[prod]:
+            for constraint in tool[prod]:
+                verb3("Overrding value {}={}".format(constraint, tool[prod][constraint] ))
+                setattr(cc, constraint, tool[prod][constraint] )
+
         products = cc.search
         retrieve_caldb_file( ftp, rootdir, products, outdir, clobber, missing )
         cc.close
@@ -513,7 +520,7 @@ def get_tools(infile):
                'badpix' : { 'ccd_id' : "" },         # 'badpix'
                'contam' : None,          # 'acis_contam'
                'greff' : None,          # 'tg_eff'
-               'lsfparam' : None       # 'lsf'
+               'lsfparm' : None,       # 'lsf'
                ### 'rmf_file' : None,  # ???
                ### 'gain_file' : None # ???
                }
@@ -539,7 +546,9 @@ def get_tools(infile):
         }
     misc = {
         'GTI_LIM' : None,  # dmgti (mtl_build_gti)
-        'MATRIX' : None    # HRC RMF files    
+        'MATRIX' : None,    # HRC RMF files    
+        'lsfparm' : { 'grattype' : 'HEG' },
+        'TGPIMASK2' : None
         }
 
     

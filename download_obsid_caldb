@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 #
-# Copyright (C) 2013-2015 Smithsonian Astrophysical Observatory
+# Copyright (C) 2013-2016 Smithsonian Astrophysical Observatory
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,9 +18,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import print_function
 
 toolname = "download_obsid_caldb"
-__revision__ = "10 November 2015"
+__revision__ = "13 Sep 2016"
 
 import os
 import sys
@@ -38,6 +39,8 @@ verb2 = lgr.verbose2
 verb3 = lgr.verbose3
 verb5 = lgr.verbose5
 
+
+import six
 
 
 #
@@ -145,12 +148,11 @@ def parse_url():
         return "{}@{}".format(u, mybox)  
 
 
-    from urlparse import urlparse    
     try: 
         if CDA_ENV not in os.environ:
-            url = urlparse( CDA_SERVER )
+            url = six.moves.urllib.parse.urlparse( CDA_SERVER )
         else:
-            url = urlparse( os.environ[CDA_ENV])
+            url = six.moves.urllib.parse.urlparse( os.environ[CDA_ENV])
     except:
         raise ValueError("Bad {} setting".format(CDA_ENV))
         
@@ -291,14 +293,14 @@ def filter_config(newver, outdir):
     # Copy config file to standard/classic location
     init_output_dir("{}/software/tools".format(outdir))
     orig_config = "{}/software/tools/caldb.config".format(outdir)
-    with open( orig_config, "wb") as fp:
+    with open( orig_config, "w") as fp:
         fp.writelines( cfg )
     
     # Generic caldb.config is setup for all HEASARC mission, just get chandra.
-    chandra = filter( lambda x: x.startswith("CHANDRA"), cfg )
+    chandra = [x for x in cfg if x.startswith("CHANDRA")]
 
     # remove ephin, sim, pcad, pimms
-    chandra = filter( lambda x: x.split()[1] not in ['EPHIN', 'PCAD', 'SIM', 'PIMMS' ], chandra )
+    chandra = [x for x in chandra if x.split()[1] not in ['EPHIN', 'PCAD', 'SIM', 'PIMMS' ]]
 
     for ii,cc in enumerate(chandra):
         #
@@ -332,6 +334,7 @@ def get_version_file(ftp, rootdir, outdir):
     try:
         tab = read_file( outfile )
         oldver = tab.get_column("CALDB_VER").values[-1] #last row
+        oldver = oldver.decode("ascii")
     except: 
         oldver = None
 
@@ -345,6 +348,7 @@ def get_version_file(ftp, rootdir, outdir):
 
     tab = read_file( outfile )
     newver = tab.get_column("CALDB_VER").values[-1] #last row
+    newver = newver.decode("ascii")
     
     if oldver and oldver != newver:
         verb0( "Old CALDB version '{}', New version will be '{}'".format(oldver,newver))
@@ -359,7 +363,7 @@ def init_output_dir(outdir):
 
     try:
         os.makedirs(outdir)
-    except OSError, ee:
+    except OSError as ee:
         if ee.errno != errno.EEXIST:
             raise
 
@@ -373,7 +377,7 @@ def retrieve_caldb_file( ftp, rootdir, looking_for, outdir, clobber, missing ):
 
     # strip off the extension numbers, we want the whole file
     # get unique set of file names
-    uniq = set(map( lambda x: x.split('[')[0], looking_for ))
+    uniq = set([x.split('[')[0] for x in looking_for])
 
     for products in uniq:
         hasdir = os.path.dirname( products )
@@ -462,13 +466,13 @@ def get_all_products():
         
     cidx = os.environ["CALDBCONFIG"]
     cdir = os.environ["CALDB"]
-    with open( cidx) as fp:
+    with open( cidx, "r+") as fp:
         lines = fp.readlines()
     
-    chandra = filter(lambda x: x.startswith("CHANDRA"), lines )    
-    ciao = filter( lambda x: x.split()[1] not in  ['EPHIN', 'PCAD', 'SIM' ], chandra )
-    ciao = filter( lambda x: 'pimms' not in x.lower(), ciao )    
-    ciao = [ x.replace(" CALDB ", " {} ".format(cdir)) for x in ciao]    
+    chandra = [x for x in lines if x.startswith("CHANDRA")]
+    ciao = [x for x in chandra if x.split()[1] not in  ['EPHIN', 'PCAD', 'SIM' ]]
+    ciao = [x for x in ciao if 'pimms' not in x.lower()]
+    ciao = [ x.replace(" CALDB ", " {} ".format(cdir)) for x in ciao]
     idxfiles = [ os.path.join( x.split()[2], os.path.join( x.split()[3],x.split()[4] )) for x in ciao ]
 
     retval = {}
@@ -477,6 +481,7 @@ def get_all_products():
         tab = read_file(idx+"[cal_qual=:4.9]")
         # get list of unique code-names
         prods = list(set(tab.get_column("cal_cnam").values)) 
+        prods = [x.decode("ascii") for x in prods ]
         for p in prods:
             retval[p] = None
         
@@ -602,7 +607,7 @@ def get_background_files( ftp, rootdir, infile, outdir, clobber, background_file
             acis_bkgrnd_lookup( infile )
             bkgfiles = stk.build( acis_bkgrnd_lookup.outfile )
             retrieve_caldb_file( ftp, rootdir, bkgfiles, outdir, clobber, missing )
-        except Exception, e:
+        except Exception as e:
             #print e
             pass
 
@@ -620,7 +625,7 @@ def get_background_files( ftp, rootdir, infile, outdir, clobber, background_file
             hrc_bkgrnd_lookup(infile, "spectrum")
             bkgfiles = stk.build( hrc_bkgrnd_lookup.outfile)
             retrieve_caldb_file( ftp, rootdir, bkgfiles, outdir, clobber, missing )                
-        except Exception, e:
+        except Exception as e:
             # print e
             pass            
     else:
@@ -756,8 +761,8 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception, E:
-        print >> sys.stderr, "\n# "+toolname+" ("+__revision__+"): ERROR "+str(E)+"\n"
+    except Exception as E:
+        print("\n# "+toolname+" ("+__revision__+"): ERROR "+str(E)+"\n", file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
   

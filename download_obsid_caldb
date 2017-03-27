@@ -21,7 +21,7 @@
 from __future__ import print_function
 
 toolname = "download_obsid_caldb"
-__revision__ = "13 Sep 2016"
+__revision__ = "18 Nov 2016"
 
 import os
 import sys
@@ -333,8 +333,11 @@ def get_version_file(ftp, rootdir, outdir):
 
     try:
         tab = read_file( outfile )
-        oldver = tab.get_column("CALDB_VER").values[-1] #last row
-        oldver = oldver.decode("ascii")
+        _oldver = tab.get_column("CALDB_VER").values[-1] #last row
+        try:
+            oldver = _oldver.decode("ascii")
+        except:
+            oldver = _oldver
     except: 
         oldver = None
 
@@ -347,8 +350,13 @@ def get_version_file(ftp, rootdir, outdir):
         raise RuntimeError("Error: cannot locate caldb version file")
 
     tab = read_file( outfile )
-    newver = tab.get_column("CALDB_VER").values[-1] #last row
-    newver = newver.decode("ascii")
+    _newver = tab.get_column("CALDB_VER").values[-1] #last row
+    
+    try:
+        newver = _newver.decode("ascii")
+    except:
+        newver = _newver
+
     
     if oldver and oldver != newver:
         verb0( "Old CALDB version '{}', New version will be '{}'".format(oldver,newver))
@@ -480,8 +488,12 @@ def get_all_products():
         # Quality of 5 is bad, not retrieved
         tab = read_file(idx+"[cal_qual=:4.9]")
         # get list of unique code-names
-        prods = list(set(tab.get_column("cal_cnam").values)) 
-        prods = [x.decode("ascii") for x in prods ]
+        _prods = list(set(tab.get_column("cal_cnam").values)) 
+        try:
+            prods = [x.decode("ascii") for x in _prods ]
+        except:
+            prods = _prods
+ 
         for p in prods:
             retval[p] = None
         
